@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nepal News Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* --- Base Settings --- */
+        * { cursor: default !important; box-sizing: border-box; transition: all 0.2s ease; }
+        input, select, textarea { cursor: text !important; }
+        button, a, .sidebar-item, .hamburger-btn, .file-drop-area, .news-card .media-area { cursor: pointer !important; }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: #f0f2f5;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('Capture.PNG');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(15px);
+            padding: 10px 20px;
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .top-bar { display: flex; align-items: center; max-width: 1200px; margin: 0 auto; min-height: 70px; gap: 20px; }
+        .logo h1 { font-size: 22px; font-weight: 900; color: #01579b; margin: 0; letter-spacing: -1px; white-space: nowrap; }
+
+        .search-wrapper { flex: 1; max-width: 500px; position: relative; display: flex; align-items: center; }
+        .search-bar { width: 100%; padding: 12px 20px 12px 45px; border-radius: 50px; border: 1.5px solid #e0e6ed; background: rgba(255, 255, 255, 0.9); outline: none; }
+        .search-icon { position: absolute; left: 18px; color: #999; }
+
+        .user-profile-trigger {
+            display: flex; align-items: center; gap: 10px;
+            padding: 5px 15px; border-radius: 50px;
+            background: white; border: 1.5px solid #e0e6ed;
+            font-weight: bold; color: #333;
+        }
+
+        .letter-avatar {
+            width: 35px; height: 35px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: bold; font-size: 16px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* --- Sidebar --- */
+        .sidebar { position: fixed; top: 0; left: -300px; width: 300px; height: 100%; background: white; z-index: 2000; transition: 0.5s; box-shadow: 10px 0 30px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
+        .sidebar.active { left: 0; }
+        .sidebar-header { padding: 50px 20px; background: #01579b; color: white; text-align: center; }
+        .sidebar-item { padding: 15px 25px; display: flex; align-items: center; gap: 15px; color: #444; text-decoration: none; font-weight: 500; }
+        .sidebar-item:hover { background: #f0f7ff; color: #039be5; }
+        .sidebar-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1999; }
+        .sidebar-overlay.active { display:block; }
+
+        /* --- News Cards --- */
+        .news-container { max-width: 1200px; margin: 20px auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; padding: 20px; }
+        .news-card { background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.15); position: relative; }
+        .media-area { width: 100%; height: 220px; background: #000; overflow: hidden; position: relative; }
+        .media-area img, .media-area video, .media-area iframe { width: 100%; height: 100%; border: none; object-fit: cover; }
+        
+        .delete-btn { 
+            position: absolute; top: 15px; right: 15px; background: rgba(255, 77, 77, 0.9); 
+            color: white; border: none; width: 35px; height: 35px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; 
+        }
+        .news-card:hover .delete-btn { opacity: 1; }
+
+        .modal-overlay { display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; }
+        .u-content { background: white; padding: 30px; border-radius: 35px; width: 95%; max-width: 450px; }
+        
+        .tab-btn { padding: 10px; flex: 1; border: none; background: #f0f2f5; cursor: pointer; border-radius: 10px; font-weight: bold; }
+        .tab-btn.active { background: #039be5; color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div id="sideAvatarContainer" style="margin-bottom: 15px; display: flex; justify-content: center;"></div>
+            <div id="sideUserName" style="font-weight: 800; font-size: 22px;">Guest User</div>
+        </div>
+        <div class="sidebar-content">
+            <div class="sidebar-item" onclick="location.reload()"><i class="fas fa-home"></i> Home Feed</div>
+            <div class="sidebar-item" onclick="openUpload(); toggleSidebar()" style="color: #039be5; font-weight: bold;"><i class="fas fa-plus-circle"></i> Create New Post</div>
+            <div class="sidebar-item" onclick="logoutUser()" style="color: #ff4d4d; margin-top: auto;"><i class="fas fa-sign-out-alt"></i> Sign Out</div>
+        </div>
+    </div>
+
+    <header>
+        <div class="top-bar">
+            <button onclick="toggleSidebar()" style="background:none; border:none; font-size: 22px;"><i class="fas fa-bars"></i></button>
+            <div class="logo"><h1>NEPAL NEWS</h1></div>
+            <div class="search-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="newsSearch" class="search-bar" placeholder="Search news..." oninput="filterNews()">
+            </div>
+            <div style="margin-left:auto; display:flex; align-items:center; gap:15px;">
+                <button onclick="openUpload()" style="background: #039be5; color: white; border: none; padding: 12px 24px; border-radius: 50px;"><i class="fas fa-plus"></i></button>
+                <div class="user-profile-trigger" id="userAuthSection" onclick="triggerGoogleLogin()" style="cursor:pointer;">
+                    <span id="headerUserName">Guest</span>
+                    <div id="headerAvatar"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="news-container" id="newsGrid"></main>
+
+    <div id="uploadModal" class="modal-overlay">
+        <div class="u-content">
+            <h2 style="text-align: center; color: #01579b; margin-bottom: 20px;">New Broadcast</h2>
+            <input type="text" id="newsTitle" placeholder="Enter post title..." style="width:100%; padding:12px; border-radius:12px; border:2px solid #eee; margin-bottom:15px; outline: none;">
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="tab-btn active" id="tabFile" onclick="switchUploadMode('file')">Local File</button>
+                <button class="tab-btn" id="tabLink" onclick="switchUploadMode('link')">Web Link</button>
+            </div>
+
+            <div id="fileSection" class="file-drop-area" style="border: 2px dashed #039be5; padding: 30px; border-radius: 20px; text-align: center; position: relative;">
+                <i class="fas fa-images" style="font-size: 30px; color: #039be5;"></i>
+                <p id="fileLabel" style="margin-top: 10px;">Upload Photo/Video</p>
+                <input type="file" id="fileInput" accept="image/*,video/*" onchange="handleFileSelect(event)" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0;">
+            </div>
+
+            <div id="linkSection" style="display: none;">
+                <input type="text" id="webLinkInput" placeholder="Paste Link (URL) here..." style="width:100%; padding:12px; border-radius:12px; border:2px solid #eee; margin-bottom:10px; outline: none;">
+                <p style="font-size: 11px; color: #666; margin-bottom: 10px;">* Supports YouTube, MP4 links, or Image URLs.</p>
+            </div>
+
+            <button onclick="postNews()" style="width:100%; margin-top:20px; padding:15px; border-radius:15px; border:none; background:#039be5; color:white; font-weight:bold;">Publish Post</button>
+            <button onclick="closeUpload()" style="width:100%; margin-top:10px; border:none; background:none; color:#999; width: 100%;">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        let currentFileBase64 = null;
+        let currentFileType = null;
+        let uploadMode = 'file';
+
+        function switchUploadMode(mode) {
+            uploadMode = mode;
+            document.getElementById('fileSection').style.display = mode === 'file' ? 'block' : 'none';
+            document.getElementById('linkSection').style.display = mode === 'link' ? 'block' : 'none';
+            document.getElementById('tabFile').classList.toggle('active', mode === 'file');
+            document.getElementById('tabLink').classList.toggle('active', mode === 'link');
+        }
+
+        // YouTube ID निकाल्ने फसन
+        function getYouTubeID(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        function updateUI() {
+            const user = JSON.parse(localStorage.getItem('loggedInUser')) || { name: 'Guest' };
+            document.getElementById('headerUserName').innerText = user.name.split(' ')[0];
+            document.getElementById('headerAvatar').innerHTML = getLetterLogo(user.name, "35px");
+            document.getElementById('sideUserName').innerText = user.name;
+            document.getElementById('sideAvatarContainer').innerHTML = getLetterLogo(user.name, "80px");
+            loadNews();
+        }
+
+        function loadNews() {
+            const grid = document.getElementById('newsGrid');
+            const saved = JSON.parse(localStorage.getItem('nepalNews')) || [];
+            const user = JSON.parse(localStorage.getItem('loggedInUser'));
+            grid.innerHTML = ''; 
+
+            saved.forEach(item => {
+                const isOwner = user && user.email === item.ownerEmail;
+                const isAdmin = user && user.name.toLowerCase() === "sugam aryal";
+                const canDelete = isOwner || isAdmin;
+
+                const card = document.createElement('div');
+                card.className = 'news-card';
+                
+                let mediaHTML = "";
+                const ytID = getYouTubeID(item.media);
+
+                if (ytID) {
+                    mediaHTML = `<iframe src="https://www.youtube.com/embed/${ytID}" allowfullscreen></iframe>`;
+                } else if (item.type === 'video') {
+                    mediaHTML = `<video src="${item.media}" controls preload="metadata"></video>`;
+                } else {
+                    mediaHTML = `<img src="${item.media}" onerror="this.src='https://via.placeholder.com/400x200?text=Invalid+Link'">`;
+                }
+                
+                card.innerHTML = `
+                    ${canDelete ? `<button class="delete-btn" onclick="deletePost(${item.id})"><i class="fas fa-trash"></i></button>` : ''}
+                    <div class="media-area">${mediaHTML}</div>
+                    <div style="padding:20px;"><h2 style="font-size:18px;">${item.title}</h2></div>`;
+                grid.appendChild(card);
+            });
+        }
+
+        function postNews() {
+            const user = JSON.parse(localStorage.getItem('loggedInUser'));
+            if(!user) return alert("Please Login First!");
+            
+            const title = document.getElementById('newsTitle').value;
+            let finalMedia = "";
+            let finalType = "";
+
+            if(uploadMode === 'file') {
+                if(!currentFileBase64) return alert("Select a file first!");
+                finalMedia = currentFileBase64;
+                finalType = currentFileType;
+            } else {
+                const link = document.getElementById('webLinkInput').value;
+                if(!link) return alert("Paste a link first!");
+                finalMedia = link;
+                // लिङ्क टाइप अटोमेटिक चेक गर्ने
+                finalType = (getYouTubeID(link) || link.match(/\.(mp4|webm|ogg)/i)) ? 'video' : 'img';
+            }
+
+            if(!title) return alert("Title is required!");
+
+            const list = JSON.parse(localStorage.getItem('nepalNews')) || [];
+            try {
+                list.unshift({ id: Date.now(), title, media: finalMedia, type: finalType, ownerEmail: user.email });
+                localStorage.setItem('nepalNews', JSON.stringify(list));
+                location.reload();
+            } catch(e) {
+                alert("File too large! Try a smaller video or use a Web Link.");
+            }
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            document.getElementById('fileLabel').innerText = file.name;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentFileBase64 = e.target.result;
+                currentFileType = file.type.startsWith('video') ? 'video' : 'img';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function deletePost(id) {
+            let list = JSON.parse(localStorage.getItem('nepalNews'));
+            localStorage.setItem('nepalNews', JSON.stringify(list.filter(i => i.id !== id)));
+            loadNews();
+        }
+
+        function getLetterLogo(name, size) {
+            const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#00bcd4', '#009688', '#4caf50', '#ff9800'];
+            const firstLetter = name ? name.charAt(0).toUpperCase() : 'G';
+            const bg = colors[firstLetter.charCodeAt(0) % colors.length];
+            return `<div class="letter-avatar" style="background:${bg}; width:${size}; height:${size}; line-height:${size}; font-size:calc(${size}/2);">${firstLetter}</div>`;
+        }
+
+        function filterNews() {
+            const term = document.getElementById('newsSearch').value.toLowerCase();
+            const cards = document.getElementsByClassName('news-card');
+            Array.from(cards).forEach(card => {
+                card.style.display = card.innerText.toLowerCase().includes(term) ? "block" : "none";
+            });
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        function openUpload() { document.getElementById('uploadModal').style.display = 'flex'; }
+        function closeUpload() { document.getElementById('uploadModal').style.display = 'none'; }
+        
+        function triggerGoogleLogin() { 
+            const name = prompt("Enter your name:");
+            if(name) {
+                if(name.toLowerCase() === "sugam aryal") {
+                    if(prompt("Admin Password:") !== "sugam@8866") return alert("Wrong!");
+                }
+                localStorage.setItem('loggedInUser', JSON.stringify({name, email: name.toLowerCase()+'@news.com'}));
+                updateUI();
+            }
+        }
+
+        function logoutUser() { localStorage.removeItem('loggedInUser'); location.reload(); }
+        window.onload = updateUI;
+    </script>
+</body>
+</html>
